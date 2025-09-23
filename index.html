@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MentorMate Pro - Advanced Learning Management System</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Firebase Connection Status -->
+    <div id="firebaseStatus" class="firebase-status">
+        <div class="status-dot"></div>
+        <span class="status-text">Firebase Disconnected</span>
+    </div>
+
+    <!-- Role Selection Screen -->
+    <div id="roleSelectionScreen" class="screen active">
+        <div class="role-container">
+            <div class="app-header">
+                <h1>🎓 MentorMate Pro</h1>
+                <p>Advanced Learning Management System</p>
+            </div>
+
+            <div class="role-options">
+                <div class="role-card" onclick="selectRole('student')">
+                    <div class="role-icon">👨‍🎓</div>
+                    <h3>Student</h3>
+                    <p>Check-in to routines, take tests, track progress</p>
+                </div>
+
+                <div class="role-card" onclick="selectRole('mentor')">
+                    <div class="role-icon">👨‍🏫</div>
+                    <h3>Mentor</h3>
+                    <p>Create tests, monitor students, view analytics</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mentor Login Screen -->
+    <div id="mentorLoginScreen" class="screen">
+        <div class="login-container">
+            <button onclick="backToRoleSelection()" class="back-button">← Back</button>
+
+            <div class="login-card">
+                <div class="login-header">
+                    <h2>👨‍🏫 Mentor Access</h2>
+                    <p>Enter password to access mentor panel</p>
+                </div>
+
+                <div class="login-form">
+                    <input 
+                        type="password" 
+                        id="mentorPasswordInput" 
+                        placeholder="Enter mentor password"
+                        onkeypress="handlePasswordKeypress(event)"
+                        class="password-input"
+                    >
+
+                    <button onclick="verifyMentorPassword()" class="login-button">
+                        🔓 Access Mentor Panel
+                    </button>
+
+                    <div id="passwordError" class="error-message"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Dashboard -->
+    <div id="studentDashboard" class="screen">
+        <div class="dashboard-container">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <div class="header-left">
+                    <h1>👨‍🎓 Student Dashboard</h1>
+                    <div class="current-time">🕒 <span id="studentTime">00:00:00</span></div>
+                </div>
+                <div class="header-right">
+                    <button onclick="backToRoleSelection()" class="logout-button">
+                        🚪 Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="dashboard-tabs">
+                <button class="tab-btn active" onclick="showSection('routines')">
+                    📚 Routines
+                </button>
+                <button class="tab-btn" onclick="showSection('tests')">
+                    📝 Tests
+                </button>
+                <button class="tab-btn" onclick="showSection('syllabus')">
+                    📖 NEET Syllabus
+                </button>
+                <button class="tab-btn" onclick="showSection('progress')">
+                    📊 Progress
+                </button>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Routines Section -->
+                <div id="routinesSection" class="content-section active">
+                    <div class="section-header">
+                        <h2>📚 Daily Routines</h2>
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <span class="stat-number" id="totalRoutines">0</span>
+                                <span class="stat-label">Total</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="completedRoutines">0</span>
+                                <span class="stat-label">Completed</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="todayPoints">0</span>
+                                <span class="stat-label">Points Today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="studentRoutines" class="routines-container">
+                        <!-- Routines will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Tests Section -->
+                <div id="testsSection" class="content-section">
+                    <div class="section-header">
+                        <h2>📝 Available Tests</h2>
+                    </div>
+
+                    <div id="availableTests" class="tests-container">
+                        <!-- Tests will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- NEW: NEET Syllabus Section -->
+                <div id="syllabusSection" class="content-section">
+                    <div class="section-header">
+                        <h2>📖 NEET Syllabus Progress</h2>
+                        <p>Track your preparation across Physics, Chemistry, and Biology</p>
+                    </div>
+
+                    <div id="syllabusContainer" class="syllabus-container">
+                        <!-- NEET Syllabus will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Progress Section -->
+                <div id="progressSection" class="content-section">
+                    <div class="section-header">
+                        <h2>📊 Your Progress</h2>
+                    </div>
+
+                    <div class="progress-overview">
+                        <div class="progress-cards">
+                            <div class="progress-card">
+                                <h3>📚 Study Stats</h3>
+                                <div class="progress-details">
+                                    <div class="detail-row">
+                                        <span class="label">Today's Points:</span>
+                                        <span class="value" id="todayPoints">0</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Yesterday's Points:</span>
+                                        <span class="value" id="yesterdayPoints">0</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Tests Completed:</span>
+                                        <span class="value" id="completedTests">0</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Active Punishments:</span>
+                                        <span class="value" id="activePunishments">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="studentActivity" class="activity-container">
+                        <!-- Student activity will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mentor Dashboard -->
+    <div id="mentorDashboard" class="screen">
+        <div class="dashboard-container">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <div class="header-left">
+                    <h1>👨‍🏫 Mentor Dashboard</h1>
+                    <div class="current-time">🕒 <span id="mentorTime">00:00:00</span></div>
+                </div>
+                <div class="header-right">
+                    <button onclick="backToRoleSelection()" class="logout-button">
+                        🚪 Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="dashboard-tabs">
+                <button class="tab-btn active" onclick="showMentorSection('analytics')">
+                    📊 Analytics
+                </button>
+                <button class="tab-btn" onclick="showMentorSection('sessions')">
+                    🔴 Live Sessions
+                </button>
+                <button class="tab-btn" onclick="showMentorSection('routines')">
+                    📚 Routines
+                </button>
+                <button class="tab-btn" onclick="showMentorSection('tests')">
+                    📝 Tests
+                </button>
+                <button class="tab-btn" onclick="showMentorSection('syllabus')">
+                    📖 NEET Syllabus
+                </button>
+                <button class="tab-btn" onclick="showMentorSection('punishments')">
+                    ⚠️ Punishments
+                </button>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Analytics Section -->
+                <div id="mentorAnalyticsSection" class="content-section active">
+                    <div class="section-header">
+                        <h2>📊 Performance Analytics</h2>
+                        <p id="todayDate">Loading date...</p>
+                    </div>
+
+                    <div class="analytics-overview">
+                        <div class="analytics-cards">
+                            <div class="analytics-card">
+                                <h3>Today's Performance</h3>
+                                <div class="analytics-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="mentorTodayPoints">0</span>
+                                        <span class="stat-label">Points Earned</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="mentorTodaySessions">0</span>
+                                        <span class="stat-label">Sessions</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="mentorTodayStudyTime">0h 0m</span>
+                                        <span class="stat-label">Study Time</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="activityFeed" class="activity-feed">
+                        <!-- Activity feed will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Live Sessions Section -->
+                <div id="mentorSessionsSection" class="content-section">
+                    <div class="section-header">
+                        <h2>🔴 Live Session Monitoring</h2>
+                        <p>Monitor active study sessions in real-time</p>
+                    </div>
+
+                    <div id="liveSessionsMonitor" class="live-sessions-monitor">
+                        <!-- Live sessions will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Routines Management Section -->
+                <div id="mentorRoutinesSection" class="content-section">
+                    <div class="section-header">
+                        <h2>📚 Routine Management</h2>
+                        <button onclick="openModal('addRoutineModal')" class="btn btn-primary">
+                            ➕ Add Routine
+                        </button>
+                    </div>
+
+                    <div id="routineManager" class="routine-manager">
+                        <!-- Routine management will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Tests Management Section -->
+                <div id="mentorTestsSection" class="content-section">
+                    <div class="section-header">
+                        <h2>📝 Test Management</h2>
+                        <button onclick="openModal('addTestModal')" class="btn btn-primary">
+                            ➕ Create Test
+                        </button>
+                    </div>
+
+                    <div id="testReports" class="test-reports">
+                        <!-- Test reports will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- NEW: NEET Syllabus Management Section -->
+                <div id="mentorSyllabusSection" class="content-section">
+                    <div class="section-header">
+                        <h2>📖 NEET Syllabus Management</h2>
+                        <p>Monitor student progress across all NEET subjects</p>
+                    </div>
+
+                    <div id="mentorSyllabusContainer" class="mentor-syllabus-container">
+                        <!-- NEET Syllabus management will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Punishments Section -->
+                <div id="mentorPunishmentsSection" class="content-section">
+                    <div class="section-header">
+                        <h2>⚠️ Student Punishments</h2>
+                    </div>
+
+                    <div id="punishmentsList" class="punishments-list">
+                        <!-- Punishments will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Monitors -->
+    <div id="activeSessionMonitor" class="session-monitor" style="display: none;">
+        <div class="monitor-content">
+            <div class="monitor-header">
+                <h3 id="activeSessionName">Study Session</h3>
+                <div class="session-actions">
+                    <button onclick="pauseSession()" class="btn btn-warning btn-small">⏸️ Pause</button>
+                    <button onclick="stopSession()" class="btn btn-danger btn-small">⏹️ Stop</button>
+                </div>
+            </div>
+
+            <div class="progress-circle">
+                <svg class="progress-ring" width="120" height="120">
+                    <circle cx="60" cy="60" r="54" stroke="#e0e0e0" stroke-width="8" fill="transparent"/>
+                    <circle id="progressRingFill" cx="60" cy="60" r="54" stroke="#4CAF50" stroke-width="8" 
+                            fill="transparent" stroke-dasharray="339.29" stroke-dashoffset="339.29"
+                            style="transform: rotate(-90deg); transform-origin: 60px 60px;"/>
+                </svg>
+                <div class="progress-text">
+                    <div id="activeSessionTime" class="session-time">00:00</div>
+                    <div id="sessionPercentage" class="session-percentage">0%</div>
+                </div>
+            </div>
+
+            <div class="session-details">
+                <div class="detail-row">
+                    <span class="label">Target:</span>
+                    <span id="targetDuration" class="value">--</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Elapsed:</span>
+                    <span id="elapsedTime" class="value">--</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Points:</span>
+                    <span id="currentPoints" class="value">0</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Status:</span>
+                    <span id="sessionStatus" class="value">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pausedSessionResume" class="session-resume" style="display: none;">
+        <div class="resume-content">
+            <div class="resume-header">
+                <h3>⏸️ Session Paused</h3>
+                <div id="pausedSessionName" class="session-name">Study Session</div>
+                <div id="pausedSessionTime" class="session-time">Paused at: 00:00</div>
+            </div>
+            <div class="resume-actions">
+                <button onclick="resumeSession()" class="btn btn-success">▶️ Resume</button>
+                <button onclick="stopSession()" class="btn btn-danger">⏹️ End Session</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="addRoutineModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="routineModalTitle">Add New Routine</h3>
+                <button onclick="closeModal('addRoutineModal')" class="close-button">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="routineName">Routine Name</label>
+                    <input type="text" id="routineName" placeholder="Enter routine name">
+                </div>
+
+                <div class="form-group">
+                    <label for="routineTime">Time</label>
+                    <input type="time" id="routineTime">
+                </div>
+
+                <div class="form-group">
+                    <label for="routineDuration">Duration (minutes)</label>
+                    <input type="number" id="routineDuration" value="30" min="15" max="480">
+                </div>
+
+                <div class="form-group">
+                    <label for="routinePoints">Points</label>
+                    <input type="number" id="routinePoints" value="10" min="1" max="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="routineCategory">Category</label>
+                    <select id="routineCategory">
+                        <option value="Health">Health</option>
+                        <option value="Education">Education</option>
+                        <option value="Skills">Skills</option>
+                        <option value="Personal">Personal</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button onclick="closeModal('addRoutineModal')" class="btn btn-secondary">Cancel</button>
+                <button onclick="saveRoutine()" class="btn btn-primary">Save Routine</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addTestModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Test</h3>
+                <button onclick="closeModal('addTestModal')" class="close-button">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="testTitle">Test Title</label>
+                    <input type="text" id="testTitle" placeholder="Enter test title">
+                </div>
+
+                <div class="form-group">
+                    <label for="testCategory">Category</label>
+                    <select id="testCategory">
+                        <option value="Academic">Academic</option>
+                        <option value="Skills">Skills</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="testDuration">Duration (minutes)</label>
+                    <input type="number" id="testDuration" value="30" min="5" max="180">
+                </div>
+
+                <div class="form-group">
+                    <label for="testQuestions">Questions (JSON Format)</label>
+                    <textarea id="testQuestions" rows="10" placeholder="Enter questions in JSON format...">
+[
+  {
+    "question": "What is the capital of France?",
+    "options": ["London", "Berlin", "Paris", "Madrid"],
+    "correctAnswer": 2
+  }
+]</textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button onclick="closeModal('addTestModal')" class="btn btn-secondary">Cancel</button>
+                <button onclick="saveTest()" class="btn btn-primary">Create Test</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
